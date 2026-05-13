@@ -17,4 +17,9 @@ export default defineConfig({
       interval: 100,
     }
   },
+  build: {
+    outDir: 'dist',
+    emptyDirBeforeWrite: true,
+  },
+  base: '/',
 });

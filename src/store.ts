@@ -1,8 +1,10 @@
-// 状态管理 - 使用服务器端存储保证跨端口同步
+// 状态管理 - 使用 localStorage 本地存储
 import { Student, BehaviorRecord, Behavior, StudentStats, DEFAULT_BEHAVIORS, STAR_TITLES } from './types';
 import { mockStudents, mockRecords, calculateStudentStats } from './mockData';
 
 type Listener = () => void;
+
+const STORAGE_KEY = 'student-behavior-data';
 
 class Store {
   private students: Student[] = [...mockStudents];
@@ -16,51 +18,46 @@ class Store {
   private dataLoaded: boolean = false;
 
   constructor() {
-    // 立即开始后台加载数据
-    this.loadFromServer();
+    // 从 localStorage 加载数据
+    this.loadFromLocalStorage();
   }
 
-  // 从服务器加载数据（后台执行）
-  private async loadFromServer(): Promise<void> {
+  // 从 localStorage 加载数据
+  private loadFromLocalStorage(): void {
     try {
-      const res = await fetch('/api/data');
-      const json = await res.json();
-      if (json.success && json.data) {
-        this.students = json.data.students || [...mockStudents];
-        this.records = json.data.records || [...mockRecords];
-        console.log('✅ 数据已从服务器加载');
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const data = JSON.parse(saved);
+        this.students = data.students || [...mockStudents];
+        this.records = data.records || [...mockRecords];
+        console.log('✅ 数据已从本地加载');
+      } else {
+        console.log('📝 首次使用，加载默认数据');
       }
-      this.dataLoaded = true;
-      this.initialized = true;
-      this.notify();
     } catch (e) {
       console.error('❌ 加载数据失败，使用默认数据', e);
-      this.dataLoaded = true;
-      this.initialized = true;
     }
+    this.dataLoaded = true;
+    this.initialized = true;
   }
 
-  // 保存数据到服务器
-  private async saveToServer(): Promise<void> {
+  // 保存数据到 localStorage
+  private saveToLocalStorage(): void {
     try {
-      await fetch('/api/data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          students: this.students,
-          records: this.records
-        })
-      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        students: this.students,
+        records: this.records
+      }));
+      console.log('✅ 数据已保存');
     } catch (e) {
       console.error('❌ 保存数据失败', e);
     }
   }
 
-  // 等待数据加载完成
+  // 等待数据加载完成（兼容旧代码）
   async waitForData(): Promise<void> {
-    if (!this.dataLoaded) {
-      await this.loadFromServer();
-    }
+    // localStorage 是同步的，直接返回
+    return Promise.resolve();
   }
 
   subscribe(listener: Listener): () => void {
@@ -112,7 +109,7 @@ class Store {
       createdAt: new Date().toISOString().split('T')[0]
     };
     this.students.push(newStudent);
-    this.saveToServer();
+    this.saveToLocalStorage();
     this.notify();
     return newStudent;
   }
@@ -121,7 +118,7 @@ class Store {
     const index = this.students.findIndex(s => s.id === id);
     if (index !== -1) {
       this.students[index] = { ...this.students[index], ...updates };
-      this.saveToServer();
+      this.saveToLocalStorage();
       this.notify();
     }
   }
@@ -133,7 +130,7 @@ class Store {
       this.selectedStudentId = null;
       this.currentView = 'dashboard';
     }
-    this.saveToServer();
+    this.saveToLocalStorage();
     this.notify();
   }
 
@@ -160,14 +157,14 @@ class Store {
       id: `r${Date.now()}`
     };
     this.records.push(newRecord);
-    this.saveToServer();
+    this.saveToLocalStorage();
     this.notify();
     return newRecord;
   }
 
   deleteRecord(id: string): void {
     this.records = this.records.filter(r => r.id !== id);
-    this.saveToServer();
+    this.saveToLocalStorage();
     this.notify();
   }
 
@@ -384,7 +381,7 @@ class Store {
       }
     }
     if (added > 0) {
-      this.saveToServer();
+      this.saveToLocalStorage();
       this.notify();
     }
     return added;
@@ -393,7 +390,7 @@ class Store {
   resetToDefault(): void {
     this.students = [...mockStudents];
     this.records = [...mockRecords];
-    this.saveToServer();
+    this.saveToLocalStorage();
     this.notify();
   }
 }

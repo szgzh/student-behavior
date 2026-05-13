@@ -4,6 +4,7 @@
   "description": "Vanilla TypeScript application with Express + Vite (HTML + CSS + TS + Node API)",
   "scripts": {
     "build": "bash ./scripts/build.sh",
+    "build:static": "vite build",
     "dev": "bash ./scripts/dev.sh",
     "preinstall": "npx only-allow pnpm",
     "lint": "eslint",
