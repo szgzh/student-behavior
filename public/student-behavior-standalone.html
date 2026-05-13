@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生行为记录系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        
+        /* 导航栏 */
+        .navbar { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 20px; position: sticky; top: 0; z-index: 100; }
+        .navbar h1 { font-size: 20px; margin-bottom: 10px; }
+        .nav-tabs { display: flex; gap: 10px; flex-wrap: wrap; }
+        .nav-tab { background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; }
+        .nav-tab.active { background: white; color: #667eea; }
+        
+        /* 内容区域 */
+        .content { padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .view { display: none; }
+        .view.active { display: block; }
+        
+        /* 卡片 */
+        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .card h2 { font-size: 18px; margin-bottom: 15px; color: #333; }
+        
+        /* 统计卡片 */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; text-align: center; }
+        .stat-card .number { font-size: 32px; font-weight: bold; }
+        .stat-card .label { font-size: 14px; opacity: 0.9; }
+        
+        /* 学生卡片 */
+        .student-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
+        .student-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .student-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .student-avatar { font-size: 50px; }
+        .student-info h3 { font-size: 18px; color: #333; }
+        .student-info p { font-size: 14px; color: #666; }
+        .student-score { font-size: 24px; font-weight: bold; color: #667eea; margin: 10px 0; }
+        .student-badges { display: flex; flex-wrap: wrap; gap: 5px; margin: 10px 0; }
+        .badge { background: #f0f0f0; padding: 4px 10px; border-radius: 12px; font-size: 12px; }
+        
+        /* 按钮 */
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5a6fd6; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #219a52; }
+        
+        /* 表单 */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: #333; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        
+        /* 表格 */
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; font-weight: 600; }
+        
+        /* 排行榜 */
+        .rank-item { display: flex; align-items: center; padding: 15px; background: white; border-radius: 8px; margin-bottom: 10px; }
+        .rank-number { font-size: 24px; font-weight: bold; color: #667eea; width: 50px; }
+        .rank-info { flex: 1; }
+        .rank-name { font-weight: 600; }
+        .rank-class { font-size: 12px; color: #666; }
+        .rank-score { font-size: 20px; font-weight: bold; }
+        .score-positive { color: #27ae60; }
+        .score-negative { color: #e74c3c; }
+        
+        /* 模态框 */
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; max-width: 400px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; }
+        
+        /* 行为选择 */
+        .behavior-select { margin-top: 10px; }
+        .behavior-option { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+        .behavior-option:hover { background: #e9ecef; }
+        .behavior-option.selected { background: #667eea; color: white; }
+        .behavior-name { font-weight: 500; }
+        .behavior-score { font-weight: bold; }
+        
+        /* 标签页 */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab { padding: 8px 20px; background: #f0f0f0; border: none; border-radius: 20px; cursor: pointer; }
+        .tab.active { background: #667eea; color: white; }
+        
+        /* 密码输入 */
+        .password-input { display: flex; gap: 10px; }
+        .password-input input { flex: 1; }
+        
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .student-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>📋 学生行为记录系统</h1>
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-view="dashboard">仪表盘</button>
+            <button class="nav-tab" data-view="students">学生管理</button>
+            <button class="nav-tab" data-view="record">行为记录</button>
+            <button class="nav-tab" data-view="leaderboard">积分排行</button>
+            <button class="nav-tab" data-view="history">历史记录</button>
+        </div>
+    </nav>
+    
+    <div class="content">
+        <!-- 仪表盘 -->
+        <div id="dashboard" class="view active">
+            <div class="stats-grid" id="stats-grid"></div>
+            <div class="card">
+                <h2>本周排行 TOP 5</h2>
+                <div id="weekly-preview"></div>
+            </div>
+        </div>
+        
+        <!-- 学生管理 -->
+        <div id="students" class="view">
+            <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-primary" onclick="showAddStudentModal()">➕ 添加学生</button>
+                <button class="btn btn-success" onclick="showImportModal()">📥 表格导入</button>
+            </div>
+            <div class="student-grid" id="student-list"></div>
+        </div>
+        
+        <!-- 行为记录 -->
+        <div id="record" class="view">
+            <div class="card">
+                <h2>记录学生行为</h2>
+                <div class="form-group">
+                    <label>选择学生</label>
+                    <select id="record-student" class="form-group input" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                        <option value="">请选择学生</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>行为类型</label>
+                    <select id="behavior-type" class="form-group input" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                        <option value="positive">正面行为（加分）</option>
+                        <option value="negative">负面行为（减分）</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>选择行为</label>
+                    <div id="behavior-list"></div>
+                </div>
+                <div class="form-group">
+                    <label>当前积分变化</label>
+                    <div id="score-preview" style="font-size: 24px; font-weight: bold; color: #667eea;">+0</div>
+                </div>
+                <button class="btn btn-primary" onclick="submitRecord()" style="width: 100%;">提交记录</button>
+            </div>
+        </div>
+        
+        <!-- 积分排行 -->
+        <div id="leaderboard" class="view">
+            <div class="tabs">
+                <button class="tab active" data-type="weekly">周榜</button>
+                <button class="tab" data-type="monthly">月榜</button>
+                <button class="tab" data-type="total">总榜</button>
+            </div>
+            <div id="leaderboard-list"></div>
+        </div>
+        
+        <!-- 历史记录 -->
+        <div id="history" class="view">
+            <div class="form-group">
+                <label>选择月份</label>
+                <select id="history-month" class="form-group input" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;"></select>
+            </div>
+            <div id="history-list"></div>
+        </div>
+    </div>
+    
+    <!-- 添加学生模态框 -->
+    <div id="add-student-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>添加学生</h3>
+                <button class="modal-close" onclick="closeModal('add-student-modal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>姓名</label>
+                <input type="text" id="new-student-name" placeholder="请输入姓名">
+            </div>
+            <div class="form-group">
+                <label>班级</label>
+                <input type="text" id="new-student-class" placeholder="如：一年级一班">
+            </div>
+            <div class="form-group">
+                <label>性别</label>
+                <select id="new-student-gender" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                    <option value="男">男</option>
+                    <option value="女">女</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>头像</label>
+                <div id="avatar-select" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+            </div>
+            <button class="btn btn-primary" onclick="addStudent()" style="width: 100%;">保存</button>
+        </div>
+    </div>
+    
+    <!-- 导入模态框 -->
+    <div id="import-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>表格导入</h3>
+                <button class="modal-close" onclick="closeModal('import-modal')">&times;</button>
+            </div>
+            <p style="margin-bottom: 15px; color: #666;">格式：班级,姓名,性别（一行一个学生）</p>
+            <textarea id="import-text" style="width: 100%; height: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 8px;" placeholder="一年级一班,张三,男&#10;一年级一班,李四,女"></textarea>
+            <button class="btn btn-success" onclick="importStudents()" style="width: 100%; margin-top: 15px;">导入</button>
+        </div>
+    </div>
+    
+    <!-- 密码验证模态框 -->
+    <div id="password-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>密码验证</h3>
+                <button class="modal-close" onclick="closeModal('password-modal')">&times;</button>
+            </div>
+            <p style="margin-bottom: 15px; color: #666;">请输入密码以删除学生</p>
+            <div class="form-group">
+                <input type="password" id="delete-password" placeholder="请输入密码">
+            </div>
+            <input type="hidden" id="delete-student-id">
+            <button class="btn btn-danger" onclick="confirmDelete()" style="width: 100%;">确认删除</button>
+        </div>
+    </div>
+
+    <script>
+        // 行为配置
+        const BEHAVIORS = {
+            positive: [
+                { id: 'p1', name: '课堂积极发言', score: 1, icon: '🙋' },
+                { id: 'p2', name: '作业优秀', score: 3, icon: '📝' },
+                { id: 'p3', name: '好人好事', score: 5, icon: '❤️' },
+                { id: 'p4', name: '卫生打扫认真负责', score: 2, icon: '🧹' },
+                { id: 'p5', name: '获得老师表扬', score: 1, icon: '👍' },
+                { id: 'p6', name: '竞赛获奖', score: 5, icon: '🏆' },
+                { id: 'p7', name: '全勤', score: 2, icon: '✅' },
+                { id: 'p8', name: '单科成绩前3', score: 3, icon: '🥇' },
+                { id: 'p9', name: '全校前100', score: 3, icon: '🌟' },
+                { id: 'p10', name: '进步50+', score: 3, icon: '📈' }
+            ],
+            negative: [
+                { id: 'n1', name: '迟到', score: -1, icon: '⏰' },
+                { id: 'n2', name: '旷课', score: -2, icon: '🚫' },
+                { id: 'n3', name: '作业未完成或抄袭', score: -2, icon: '📄' },
+                { id: 'n4', name: '上课说小话做小动作吃零食', score: -2, icon: '💬' },
+                { id: 'n5', name: '顶撞老师', score: -10, icon: '😠' },
+                { id: 'n6', name: '卫生不认真负责，逃避', score: -2, icon: '🧹' },
+                { id: 'n7', name: '带手机、游戏机等电子产品', score: -5, icon: '📱' },
+                { id: 'n8', name: '不服从班干部合理管理', score: -5, icon: '📢' },
+                { id: 'n9', name: '乱扔垃圾、破坏公共卫生', score: -2, icon: '🗑️' },
+                { id: 'n10', name: '给同学起侮辱性外号、嘲笑他人', score: -3, icon: '😑' },
+                { id: 'n11', name: '打架斗殴', score: -50, icon: '👊' },
+                { id: 'n12', name: '带烟抽烟、偷窃等严重违纪', score: -20, icon: '🚬' },
+                { id: 'n13', name: '故意损坏公物', score: -5, icon: '🔨' }
+            ]
+        };
+
+        // 称号配置
+        const BADGES = [
+            { name: '📚 学习之星', minScore: 100 },
+            { name: '🚀 进步之星', minScore: 50 },
+            { name: '🌟 文明之星', minScore: 30 },
+            { name: '🏆 劳动之星', minScore: 20 },
+            { name: '🤝 团结之星', minScore: 10 }
+        ];
+
+        const AVATARS = ['👦', '👧', '🧑', '👨', '👩', '🧒'];
+
+        // 数据存储
+        let students = [];
+        let records = [];
+        let selectedBehavior = null;
+        let currentLeaderboardType = 'weekly';
+
+        // 初始化
+        function init() {
+            loadData();
+            renderAll();
+            setupEventListeners();
+        }
+
+        // 加载数据
+        function loadData() {
+            const saved = localStorage.getItem('studentBehaviorData');
+            if (saved) {
+                const data = JSON.parse(saved);
+                students = data.students || [];
+                records = data.records || [];
+            } else {
+                // 默认学生数据
+                students = [
+                    { id: 's1', name: '张小明', class: '一年级一班', gender: '男', avatar: '👦', createdAt: '2024-09-01' },
+                    { id: 's2', name: '李小红', class: '一年级一班', gender: '女', avatar: '👧', createdAt: '2024-09-01' },
+                    { id: 's3', name: '王小强', class: '一年级二班', gender: '男', avatar: '👦', createdAt: '2024-09-01' },
+                    { id: 's4', name: '陈思思', class: '一年级二班', gender: '女', avatar: '👧', createdAt: '2024-09-01' },
+                    { id: 's5', name: '刘子轩', class: '一年级三班', gender: '男', avatar: '👦', createdAt: '2024-09-01' },
+                    { id: 's6', name: '赵雨萱', class: '一年级三班', gender: '女', avatar: '👧', createdAt: '2024-09-01' }
+                ];
+                saveData();
+            }
+        }
+
+        // 保存数据
+        function saveData() {
+            localStorage.setItem('studentBehaviorData', JSON.stringify({ students, records }));
+        }
+
+        // 设置事件监听
+        function setupEventListeners() {
+            // 导航标签
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                    this.classList.add('active');
+                    document.getElementById(this.dataset.view).classList.add('active');
+                });
+            });
+
+            // 排行榜标签
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    currentLeaderboardType = this.dataset.type;
+                    renderLeaderboard();
+                });
+            });
+
+            // 行为类型切换
+            document.getElementById('behavior-type').addEventListener('change', renderBehaviorList);
+
+            // 月份选择
+            document.getElementById('history-month').addEventListener('change', renderHistoryList);
+        }
+
+        // 渲染所有
+        function renderAll() {
+            renderStats();
+            renderStudentList();
+            renderStudentSelect();
+            renderBehaviorList();
+            renderLeaderboard();
+            renderHistoryMonths();
+        }
+
+        // 渲染统计
+        function renderStats() {
+            const totalScore = students.reduce((sum, s) => sum + getStudentScore(s.id), 0);
+            const avgScore = students.length > 0 ? Math.round(totalScore / students.length) : 0;
+            
+            document.getElementById('stats-grid').innerHTML = `
+                <div class="stat-card"><div class="number">${students.length}</div><div class="label">学生总数</div></div>
+                <div class="stat-card"><div class="number">${records.length}</div><div class="label">行为记录</div></div>
+                <div class="stat-card"><div class="number">${avgScore}</div><div class="label">平均积分</div></div>
+            `;
+
+            // 周排行预览
+            const weeklyData = getWeeklyLeaderboard().slice(0, 5);
+            document.getElementById('weekly-preview').innerHTML = weeklyData.map((s, i) => `
+                <div class="rank-item">
+                    <div class="rank-number">${i + 1}</div>
+                    <div class="rank-info">
+                        <div class="rank-name">${s.avatar} ${s.name}</div>
+                        <div class="rank-class">${s.class}</div>
+                    </div>
+                    <div class="rank-score ${s.weeklyScore >= 0 ? 'score-positive' : 'score-negative'}">${s.weeklyScore >= 0 ? '+' : ''}${s.weeklyScore}</div>
+                </div>
+            `).join('') || '<p style="color: #666;">暂无数据</p>';
+        }
+
+        // 获取学生积分
+        function getStudentScore(studentId) {
+            return records.filter(r => r.studentId === studentId).reduce((sum, r) => sum + r.score, 0);
+        }
+
+        // 获取周积分
+        function getWeeklyScore(studentId) {
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return records.filter(r => r.studentId === studentId && new Date(r.date) >= weekAgo)
+                .reduce((sum, r) => sum + r.score, 0);
+        }
+
+        // 获取月积分
+        function getMonthlyScore(studentId) {
+            const monthAgo = new Date();
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return records.filter(r => r.studentId === studentId && new Date(r.date) >= monthAgo)
+                .reduce((sum, r) => sum + r.score, 0);
+        }
+
+        // 获取称号
+        function getBadges(score) {
+            return BADGES.filter(b => score >= b.minScore).map(b => b.name);
+        }
+
+        // 周排行
+        function getWeeklyLeaderboard() {
+            return students.map(s => ({
+                ...s,
+                weeklyScore: getWeeklyScore(s.id),
+                totalScore: getStudentScore(s.id)
+            })).sort((a, b) => b.weeklyScore - a.weeklyScore);
+        }
+
+        // 月排行
+        function getMonthlyLeaderboard() {
+            return students.map(s => ({
+                ...s,
+                monthlyScore: getMonthlyScore(s.id),
+                totalScore: getStudentScore(s.id)
+            })).sort((a, b) => b.monthlyScore - a.monthlyScore);
+        }
+
+        // 总排行
+        function getTotalLeaderboard() {
+            return students.map(s => ({
+                ...s,
+                totalScore: getStudentScore(s.id)
+            })).sort((a, b) => b.totalScore - a.totalScore);
+        }
+
+        // 渲染学生列表
+        function renderStudentList() {
+            document.getElementById('student-list').innerHTML = students.map(s => {
+                const score = getStudentScore(s.id);
+                const badges = getBadges(score);
+                return `
+                    <div class="student-card">
+                        <div class="student-header">
+                            <div class="student-avatar">${s.avatar}</div>
+                            <div class="student-info">
+                                <h3>${s.name}</h3>
+                                <p>${s.class} · ${s.gender}</p>
+                            </div>
+                        </div>
+                        <div class="student-score">${score >= 0 ? '+' : ''}${score} 积分</div>
+                        <div class="student-badges">${badges.map(b => `<span class="badge">${b}</span>`).join('')}</div>
+                        <button class="btn btn-danger" style="width: 100%; margin-top: 10px;" onclick="showPasswordModal('${s.id}')">删除学生</button>
+                    </div>
+                `;
+            }).join('') || '<p style="color: #666;">暂无学生，请先添加学生</p>';
+        }
+
+        // 渲染学生选择
+        function renderStudentSelect() {
+            document.getElementById('record-student').innerHTML = '<option value="">请选择学生</option>' +
+                students.map(s => `<option value="${s.id}">${s.name} (${s.class})</option>`).join('');
+        }
+
+        // 渲染行为列表
+        function renderBehaviorList() {
+            const type = document.getElementById('behavior-type').value;
+            const behaviors = BEHAVIORS[type];
+            selectedBehavior = null;
+            document.getElementById('score-preview').textContent = '+0';
+            document.getElementById('score-preview').className = type === 'positive' ? 'score-positive' : 'score-negative';
+
+            document.getElementById('behavior-list').innerHTML = behaviors.map(b => `
+                <div class="behavior-option" onclick="selectBehavior('${b.id}', ${b.score})">
+                    <span class="behavior-name">${b.icon} ${b.name}</span>
+                    <span class="behavior-score">${b.score >= 0 ? '+' : ''}${b.score}</span>
+                </div>
+            `).join('');
+        }
+
+        // 选择行为
+        function selectBehavior(id, score) {
+            selectedBehavior = { id, score };
+            document.querySelectorAll('.behavior-option').forEach(el => el.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            
+            const preview = document.getElementById('score-preview');
+            preview.textContent = `${score >= 0 ? '+' : ''}${score}`;
+            preview.className = score >= 0 ? 'score-positive' : 'score-negative';
+        }
+
+        // 提交记录
+        function submitRecord() {
+            const studentId = document.getElementById('record-student').value;
+            if (!studentId) {
+                alert('请选择学生');
+                return;
+            }
+            if (!selectedBehavior) {
+                alert('请选择行为');
+                return;
+            }
+
+            records.push({
+                id: 'r' + Date.now(),
+                studentId,
+                behaviorId: selectedBehavior.id,
+                score: selectedBehavior.score,
+                date: new Date().toISOString()
+            });
+
+            saveData();
+            selectedBehavior = null;
+            document.getElementById('record-student').value = '';
+            renderBehaviorList();
+            renderStats();
+            renderLeaderboard();
+            alert('记录成功！');
+        }
+
+        // 渲染排行榜
+        function renderLeaderboard() {
+            let data;
+            let scoreField;
+            
+            if (currentLeaderboardType === 'weekly') {
+                data = getWeeklyLeaderboard();
+                scoreField = 'weeklyScore';
+            } else if (currentLeaderboardType === 'monthly') {
+                data = getMonthlyLeaderboard();
+                scoreField = 'monthlyScore';
+            } else {
+                data = getTotalLeaderboard();
+                scoreField = 'totalScore';
+            }
+
+            document.getElementById('leaderboard-list').innerHTML = data.map((s, i) => {
+                const score = s[scoreField];
+                const badges = getBadges(s.totalScore);
+                return `
+                    <div class="rank-item">
+                        <div class="rank-number">${i + 1}</div>
+                        <div class="rank-info">
+                            <div class="rank-name">${s.avatar} ${s.name}</div>
+                            <div class="rank-class">${s.class}</div>
+                            <div class="student-badges">${badges.map(b => `<span class="badge">${b}</span>`).join('')}</div>
+                        </div>
+                        <div class="rank-score ${score >= 0 ? 'score-positive' : 'score-negative'}">${score >= 0 ? '+' : ''}${score}</div>
+                    </div>
+                `;
+            }).join('') || '<p style="color: #666;">暂无数据</p>';
+        }
+
+        // 渲染历史月份
+        function renderHistoryMonths() {
+            const months = new Set();
+            records.forEach(r => {
+                const date = new Date(r.date);
+                months.add(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+            });
+
+            const monthOptions = Array.from(months).sort().reverse();
+            document.getElementById('history-month').innerHTML = '<option value="">请选择月份</option>' +
+                monthOptions.map(m => `<option value="${m}">${m}</option>`).join('');
+        }
+
+        // 渲染历史记录
+        function renderHistoryList() {
+            const month = document.getElementById('history-month').value;
+            if (!month) {
+                document.getElementById('history-list').innerHTML = '<p style="color: #666;">请选择月份</p>';
+                return;
+            }
+
+            const [year, m] = month.split('-');
+            const monthRecords = records.filter(r => {
+                const date = new Date(r.date);
+                return date.getFullYear() === parseInt(year) && date.getMonth() + 1 === parseInt(m);
+            });
+
+            const studentsInMonth = [...new Set(monthRecords.map(r => r.studentId))];
+            
+            document.getElementById('history-list').innerHTML = studentsInMonth.map(studentId => {
+                const student = students.find(s => s.id === studentId);
+                const studentRecords = monthRecords.filter(r => r.studentId === studentId);
+                const totalScore = studentRecords.reduce((sum, r) => sum + r.score, 0);
+
+                return `
+                    <div class="card">
+                        <h3 style="margin-bottom: 15px;">${student?.avatar || '👤'} ${student?.name || '未知'} - ${student?.class || ''}</h3>
+                        <p style="margin-bottom: 10px;">月积分：<strong class="${totalScore >= 0 ? 'score-positive' : 'score-negative'}">${totalScore >= 0 ? '+' : ''}${totalScore}</strong></p>
+                        <table>
+                            <thead>
+                                <tr><th>行为</th><th>积分</th><th>日期</th></tr>
+                            </thead>
+                            <tbody>
+                                ${studentRecords.map(r => {
+                                    const behavior = [...BEHAVIORS.positive, ...BEHAVIORS.negative].find(b => b.id === r.behaviorId);
+                                    return `<tr>
+                                        <td>${behavior?.icon || ''} ${behavior?.name || r.behaviorId}</td>
+                                        <td class="${r.score >= 0 ? 'score-positive' : 'score-negative'}">${r.score >= 0 ? '+' : ''}${r.score}</td>
+                                        <td>${new Date(r.date).toLocaleDateString()}</td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }).join('') || '<p style="color: #666;">该月份暂无记录</p>';
+        }
+
+        // 显示添加学生模态框
+        function showAddStudentModal() {
+            document.getElementById('add-student-modal').classList.add('active');
+            document.getElementById('avatar-select').innerHTML = AVATARS.map((a, i) => `
+                <button class="btn ${i === 0 ? 'btn-primary' : ''}" onclick="selectAvatar('${a}', this)" style="font-size: 24px;">${a}</button>
+            `).join('');
+        }
+
+        let selectedAvatar = '👦';
+        function selectAvatar(avatar, btn) {
+            selectedAvatar = avatar;
+            document.querySelectorAll('#avatar-select .btn').forEach(b => b.classList.remove('btn-primary'));
+            btn.classList.add('btn-primary');
+        }
+
+        // 添加学生
+        function addStudent() {
+            const name = document.getElementById('new-student-name').value.trim();
+            const cls = document.getElementById('new-student-class').value.trim();
+            const gender = document.getElementById('new-student-gender').value;
+
+            if (!name || !cls) {
+                alert('请填写完整信息');
+                return;
+            }
+
+            students.push({
+                id: 's' + Date.now(),
+                name,
+                class: cls,
+                gender,
+                avatar: selectedAvatar,
+                createdAt: new Date().toISOString()
+            });
+
+            saveData();
+            closeModal('add-student-modal');
+            renderAll();
+            alert('添加成功！');
+        }
+
+        // 显示导入模态框
+        function showImportModal() {
+            document.getElementById('import-modal').classList.add('active');
+        }
+
+        // 导入学生
+        function importStudents() {
+            const text = document.getElementById('import-text').value.trim();
+            if (!text) {
+                alert('请输入学生数据');
+                return;
+            }
+
+            const lines = text.split('\n');
+            let count = 0;
+
+            lines.forEach(line => {
+                const parts = line.split(',').map(p => p.trim());
+                if (parts.length >= 3) {
+                    students.push({
+                        id: 's' + Date.now() + Math.random(),
+                        name: parts[1],
+                        class: parts[0],
+                        gender: parts[2],
+                        avatar: parts[2] === '女' ? '👧' : '👦',
+                        createdAt: new Date().toISOString()
+                    });
+                    count++;
+                }
+            });
+
+            saveData();
+            closeModal('import-modal');
+            document.getElementById('import-text').value = '';
+            renderAll();
+            alert(`成功导入 ${count} 名学生！`);
+        }
+
+        // 显示密码模态框
+        function showPasswordModal(studentId) {
+            document.getElementById('delete-student-id').value = studentId;
+            document.getElementById('delete-password').value = '';
+            document.getElementById('password-modal').classList.add('active');
+        }
+
+        // 确认删除
+        function confirmDelete() {
+            const password = document.getElementById('delete-password').value;
+            if (password !== '86713279') {
+                alert('密码错误');
+                return;
+            }
+
+            const studentId = document.getElementById('delete-student-id').value;
+            students = students.filter(s => s.id !== studentId);
+            records = records.filter(r => r.studentId !== studentId);
+            
+            saveData();
+            closeModal('password-modal');
+            renderAll();
+            alert('删除成功！');
+        }
+
+        // 关闭模态框
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // 启动
+        init();
+    </script>
+</body>
+</html>

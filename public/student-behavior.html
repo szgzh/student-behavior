@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学生行为记录系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .nav-item { transition: all 0.2s; }
+    .nav-item:hover { background: #f3f4f6; }
+    .nav-item.active { background: #dbeafe; color: #1d4ed8; border-left: 3px solid #1d4ed8; }
+    .card { transition: all 0.2s; }
+    .card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+    .modal { animation: fadeIn 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .score-positive { color: #16a34a; font-weight: 600; }
+    .score-negative { color: #dc2626; font-weight: 600; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div id="app" class="flex min-h-screen">
+    <!-- 侧边栏 -->
+    <nav class="w-48 bg-white shadow-lg flex-shrink-0">
+      <div class="p-4 border-b">
+        <h1 class="text-lg font-bold text-gray-800">📋 行为记录</h1>
+      </div>
+      <div class="p-2">
+        <div class="nav-item active p-3 rounded cursor-pointer" data-view="dashboard">📊 仪表盘</div>
+        <div class="nav-item p-3 rounded cursor-pointer" data-view="students">👥 学生管理</div>
+        <div class="nav-item p-3 rounded cursor-pointer" data-view="records">📝 行为记录</div>
+        <div class="nav-item p-3 rounded cursor-pointer" data-view="leaderboard">🏆 积分排行</div>
+        <div class="nav-item p-3 rounded cursor-pointer" data-view="history">📚 历史记录</div>
+      </div>
+    </nav>
+
+    <!-- 主内容 -->
+    <main class="flex-1 p-6">
+      <div id="content"></div>
+    </main>
+  </div>
+
+  <!-- 模态框容器 -->
+  <div id="modal-container"></div>
+
+  <script>
+    // ========== 数据配置 ==========
+    const BEHAVIORS = {
+      positive: [
+        { id: 'p1', name: '课堂积极发言', score: 1, icon: '🙋' },
+        { id: 'p2', name: '作业优秀', score: 3, icon: '📝' },
+        { id: 'p3', name: '好人好事', score: 5, icon: '❤️' },
+        { id: 'p4', name: '卫生打扫认真负责', score: 2, icon: '🧹' },
+        { id: 'p5', name: '获得老师表扬', score: 1, icon: '👍' },
+        { id: 'p6', name: '竞赛获奖', score: 5, icon: '🏆' },
+        { id: 'p7', name: '全勤', score: 2, icon: '📅' },
+        { id: 'p8', name: '单科成绩前3', score: 3, icon: '📚' },
+        { id: 'p9', name: '全校前100', score: 3, icon: '🌟' },
+        { id: 'p10', name: '进步50+', score: 3, icon: '🚀' }
+      ],
+      negative: [
+        { id: 'n1', name: '迟到', score: -1, icon: '⏰' },
+        { id: 'n2', name: '旷课', score: -2, icon: '🚫' },
+        { id: 'n3', name: '作业未完成或抄袭', score: -2, icon: '📄' },
+        { id: 'n4', name: '上课说小话做小动作吃零食', score: -2, icon: '💬' },
+        { id: 'n5', name: '顶撞老师', score: -10, icon: '😠' },
+        { id: 'n6', name: '卫生不认真负责，逃避', score: -2, icon: '🧹' },
+        { id: 'n7', name: '带手机、游戏机等电子产品', score: -5, icon: '📱' },
+        { id: 'n8', name: '乱扔垃圾、破坏公共卫生', score: -2, icon: '🗑️' },
+        { id: 'n9', name: '给同学起侮辱性外号、嘲笑他人', score: -3, icon: '😢' },
+        { id: 'n10', name: '打架斗殴', score: -50, icon: '👊' },
+        { id: 'n11', name: '带烟抽烟、偷窃等严重违纪', score: -20, icon: '🚭' },
+        { id: 'n12', name: '故意损坏公物', score: -5, icon: '🔨' }
+      ]
+    };
+
+    const TITLES = [
+      { name: '学习之星', icon: '📚', minScore: 100 },
+      { name: '进步之星', icon: '🚀', minScore: 50 },
+      { name: '文明之星', icon: '🌟', minScore: 30 },
+      { name: '劳动之星', icon: '🏆', minScore: 20 },
+      { name: '团结之星', icon: '🤝', minScore: 10 }
+    ];
+
+    const AVATARS = ['👦', '👧', '🧒', '👶', '😎', '🤓', '😊', '🙂'];
+
+    // ========== 数据存储 ==========
+    const STORAGE_KEY = 'student_behavior_data';
+
+    function loadData() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+      // 默认数据
+      return {
+        students: [
+          { id: 's1', name: '张小明', class: '一年级一班', gender: '男', avatar: '👦' },
+          { id: 's2', name: '李小红', class: '一年级一班', gender: '女', avatar: '👧' },
+          { id: 's3', name: '王小强', class: '一年级二班', gender: '男', avatar: '👦' },
+          { id: 's4', name: '陈思思', class: '一年级二班', gender: '女', avatar: '👧' },
+          { id: 's5', name: '刘子轩', class: '二年级一班', gender: '男', avatar: '👦' },
+          { id: 's6', name: '赵雨萱', class: '二年级一班', gender: '女', avatar: '👧' }
+        ],
+        records: []
+      };
+    }
+
+    function saveData(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    let appData = loadData();
+
+    // ========== 工具函数 ==========
+    function generateId() {
+      return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    function getStudentScore(studentId) {
+      return appData.records
+        .filter(r => r.studentId === studentId)
+        .reduce((sum, r) => sum + r.score, 0);
+    }
+
+    function getTitle(score) {
+      for (let title of TITLES) {
+        if (score >= title.minScore) return title;
+      }
+      return null;
+    }
+
+    function getBehaviorById(id) {
+      return [...BEHAVIORS.positive, ...BEHAVIORS.negative].find(b => b.id === id);
+    }
+
+    function getWeekStart(date) {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      return new Date(d.setDate(diff)).toDateString();
+    }
+
+    function getMonthKey(date) {
+      const d = new Date(date);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    // ========== 视图渲染 ==========
+    let currentView = 'dashboard';
+
+    function render() {
+      const views = {
+        dashboard: renderDashboard,
+        students: renderStudents,
+        records: renderRecords,
+        leaderboard: renderLeaderboard,
+        history: renderHistory
+      };
+      views[currentView]();
+    }
+
+    function renderDashboard() {
+      const totalScore = appData.students.reduce((sum, s) => sum + getStudentScore(s.id), 0);
+      const avgScore = appData.students.length ? (totalScore / appData.students.length).toFixed(1) : 0;
+      
+      const now = new Date();
+      const weekStart = getWeekStart(now);
+      const monthKey = getMonthKey(now);
+
+      const weeklyRecords = appData.records.filter(r => getWeekStart(r.date) === weekStart);
+      const monthlyRecords = appData.records.filter(r => getMonthKey(r.date) === monthKey);
+
+      const weeklyScores = {};
+      const monthlyScores = {};
+      
+      weeklyRecords.forEach(r => {
+        weeklyScores[r.studentId] = (weeklyScores[r.studentId] || 0) + r.score;
+      });
+      
+      monthlyRecords.forEach(r => {
+        monthlyScores[r.studentId] = (monthlyScores[r.studentId] || 0) + r.score;
+      });
+
+      const weeklyRank = Object.entries(weeklyScores)
+        .map(([id, score]) => ({ ...appData.students.find(s => s.id === id), score }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+
+      const monthlyRank = Object.entries(monthlyScores)
+        .map(([id, score]) => ({ ...appData.students.find(s => s.id === id), score }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+
+      document.getElementById('content').innerHTML = `
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">📊 仪表盘</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div class="bg-white p-6 rounded-lg shadow card">
+            <div class="text-3xl mb-2">👥</div>
+            <div class="text-2xl font-bold text-blue-600">${appData.students.length}</div>
+            <div class="text-gray-500">学生总数</div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow card">
+            <div class="text-3xl mb-2">📝</div>
+            <div class="text-2xl font-bold text-green-600">${appData.records.length}</div>
+            <div class="text-gray-500">行为记录</div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow card">
+            <div class="text-3xl mb-2">⭐</div>
+            <div class="text-2xl font-bold text-purple-600">${avgScore}</div>
+            <div class="text-gray-500">平均积分</div>
+          </div>
+          <div class="bg-white p-6 rounded-lg shadow card">
+            <div class="text-3xl mb-2">🏆</div>
+            <div class="text-2xl font-bold text-orange-600">${appData.records.filter(r => r.score > 0).length}</div>
+            <div class="text-gray-500">正面行为</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-white p-6 rounded-lg shadow">
+            <h3 class="text-lg font-bold mb-4">📅 本周排行 TOP 5</h3>
+            ${weeklyRank.length ? weeklyRank.map((s, i) => `
+              <div class="flex items-center justify-between py-2 border-b">
+                <div class="flex items-center gap-3">
+                  <span class="text-lg">${['🥇', '🥈', '🥉', '4', '5'][i]}</span>
+                  <span class="text-2xl">${s?.avatar || '👤'}</span>
+                  <div>
+                    <div class="font-medium">${s?.name || '未知'}</div>
+                    <div class="text-sm text-gray-500">${s?.class || ''}</div>
+                  </div>
+                </div>
+                <span class="${s.score >= 0 ? 'score-positive' : 'score-negative'}">${s.score >= 0 ? '+' : ''}${s.score}</span>
+              </div>
+            `).join('') : '<p class="text-gray-500 text-center py-4">暂无数据</p>'}
+          </div>
+
+          <div class="bg-white p-6 rounded-lg shadow">
+            <h3 class="text-lg font-bold mb-4">📆 本月排行 TOP 5</h3>
+            ${monthlyRank.length ? monthlyRank.map((s, i) => `
+              <div class="flex items-center justify-between py-2 border-b">
+                <div class="flex items-center gap-3">
+                  <span class="text-lg">${['🥇', '🥈', '🥉', '4', '5'][i]}</span>
+                  <span class="text-2xl">${s?.avatar || '👤'}</span>
+                  <div>
+                    <div class="font-medium">${s?.name || '未知'}</div>
+                    <div class="text-sm text-gray-500">${s?.class || ''}</div>
+                  </div>
+                </div>
+                <span class="${s.score >= 0 ? 'score-positive' : 'score-negative'}">${s.score >= 0 ? '+' : ''}${s.score}</span>
+              </div>
+            `).join('') : '<p class="text-gray-500 text-center py-4">暂无数据</p>'}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderStudents() {
+      document.getElementById('content').innerHTML = `
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-gray-800">👥 学生管理</h2>
+          <div class="flex gap-2">
+            <button onclick="showAddStudent()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">➕ 添加学生</button>
+            <button onclick="showImportStudents()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">📥 表格导入</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          ${appData.students.map(s => {
+            const score = getStudentScore(s.id);
+            const title = getTitle(score);
+            return `
+              <div class="bg-white p-4 rounded-lg shadow card">
+                <div class="flex items-start justify-between">
+                  <div class="flex items-center gap-3">
+                    <span class="text-4xl">${s.avatar}</span>
+                    <div>
+                      <div class="font-bold text-lg">${s.name}</div>
+                      <div class="text-sm text-gray-500">${s.class} · ${s.gender}</div>
+                      ${title ? `<span class="inline-block mt-1 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">${title.icon} ${title.name}</span>` : ''}
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-2xl font-bold ${score >= 0 ? 'text-green-600' : 'text-red-600'}">${score >= 0 ? '+' : ''}${score}</div>
+                    <div class="text-xs text-gray-500">总积分</div>
+                  </div>
+                </div>
+                <div class="mt-3 pt-3 border-t flex gap-2">
+                  <button onclick="quickRecord('${s.id}')" class="flex-1 bg-blue-50 text-blue-600 py-1 rounded text-sm hover:bg-blue-100">📝 记录</button>
+                  <button onclick="deleteStudent('${s.id}')" class="flex-1 bg-red-50 text-red-600 py-1 rounded text-sm hover:bg-red-100">🗑️ 删除</button>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        ${appData.students.length === 0 ? `
+          <div class="text-center py-12 text-gray-500">
+            <div class="text-6xl mb-4">📭</div>
+            <p>还没有学生，点击上方按钮添加</p>
+          </div>
+        ` : ''}
+      `;
+    }
+
+    function renderRecords() {
+      document.getElementById('content').innerHTML = `
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">📝 行为记录</h2>
+
+        <div class="bg-white p-6 rounded-lg shadow max-w-2xl">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">选择学生</label>
+              <select id="record-student" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" onchange="updateRecordPreview()">
+                <option value="">-- 请选择学生 --</option>
+                ${appData.students.map(s => `<option value="${s.id}">${s.name} (${s.class})</option>`).join('')}
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">行为类型</label>
+              <select id="record-type" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" onchange="updateBehaviorSelect()">
+                <option value="">-- 请选择 --</option>
+                <option value="positive">✅ 正面行为</option>
+                <option value="negative">❌ 负面行为</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">选择行为</label>
+              <select id="record-behavior" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500" onchange="updateRecordPreview()" disabled>
+                <option value="">-- 请先选择类型 --</option>
+              </select>
+            </div>
+
+            <div id="record-preview" class="p-4 bg-gray-50 rounded-lg hidden">
+              <div class="flex items-center justify-between">
+                <span class="text-gray-600">预计积分变化</span>
+                <span id="preview-score" class="text-2xl font-bold"></span>
+              </div>
+            </div>
+
+            <button onclick="submitRecord()" class="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition">
+              ✅ 提交记录
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-8">
+          <h3 class="text-lg font-bold mb-4">📋 最近记录</h3>
+          <div class="bg-white rounded-lg shadow overflow-hidden">
+            ${appData.records.slice(-10).reverse().map(r => {
+              const student = appData.students.find(s => s.id === r.studentId);
+              const behavior = getBehaviorById(r.behaviorId);
+              return `
+                <div class="flex items-center justify-between p-4 border-b hover:bg-gray-50">
+                  <div class="flex items-center gap-3">
+                    <span class="text-2xl">${behavior?.icon || '📋'}</span>
+                    <div>
+                      <div class="font-medium">${student?.name || '未知'} - ${behavior?.name || '未知行为'}</div>
+                      <div class="text-sm text-gray-500">${new Date(r.date).toLocaleString()}</div>
+                    </div>
+                  </div>
+                  <span class="${r.score >= 0 ? 'score-positive' : 'score-negative'} text-lg">
+                    ${r.score >= 0 ? '+' : ''}${r.score}
+                  </span>
+                </div>
+              `;
+            }).join('') || '<p class="p-4 text-gray-500 text-center">暂无记录</p>'}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLeaderboard() {
+      const now = new Date();
+      const weekStart = getWeekStart(now);
+      const monthKey = getMonthKey(now);
+
+      const weeklyRecords = appData.records.filter(r => getWeekStart(r.date) === weekStart);
+      const monthlyRecords = appData.records.filter(r => getMonthKey(r.date) === monthKey);
+
+      const calcScores = (records) => {
+        const scores = {};
+        records.forEach(r => {
+          scores[r.studentId] = (scores[r.studentId] || 0) + r.score;
+        });
+        return Object.entries(scores)
+          .map(([id, score]) => {
+            const student = appData.students.find(s => s.id === id);
+            return student ? { ...student, score } : null;
+          })
+          .filter(Boolean)
+          .sort((a, b) => b.score - a.score);
+      };
+
+      const totalScores = appData.students
+        .map(s => ({ ...s, score: getStudentScore(s.id) }))
+        .sort((a, b) => b.score - a.score);
+
+      const weeklyScores = calcScores(weeklyRecords);
+      const monthlyScores = calcScores(monthlyRecords);
+
+      document.getElementById('content').innerHTML = `
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">🏆 积分排行</h2>
+
+        <div class="flex gap-2 mb-6">
+          <button onclick="showLeaderboard('week')" class="lb-tab px-4 py-2 rounded-lg bg-blue-500 text-white" data-tab="week">📅 周排行</button>
+          <button onclick="showLeaderboard('month')" class="lb-tab px-4 py-2 rounded-lg bg-gray-200" data-tab="month">📆 月排行</button>
+          <button onclick="showLeaderboard('total')" class="lb-tab px-4 py-2 rounded-lg bg-gray-200" data-tab="total">🏆 总排行</button>
+        </div>
+
+        <div id="leaderboard-content"></div>
+
+        <div class="mt-8 bg-white p-4 rounded-lg shadow">
+          <h3 class="font-bold mb-3">🏅 称号说明</h3>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+            ${TITLES.map(t => `
+              <div class="text-center p-2 bg-gray-50 rounded">
+                <span class="text-2xl">${t.icon}</span>
+                <div class="text-sm font-medium">${t.name}</div>
+                <div class="text-xs text-gray-500">${t.minScore}分+</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      window.leaderboardData = { weeklyScores, monthlyScores, totalScores };
+      showLeaderboard('week');
+    }
+
+    function showLeaderboard(type) {
+      document.querySelectorAll('.lb-tab').forEach(btn => {
+        btn.classList.remove('bg-blue-500', 'text-white');
+        btn.classList.add('bg-gray-200');
+      });
+      document.querySelector(`.lb-tab[data-tab="${type}"]`).classList.add('bg-blue-500', 'text-white');
+      document.querySelector(`.lb-tab[data-tab="${type}"]`).classList.remove('bg-gray-200');
+
+      const data = {
+        week: window.leaderboardData.weeklyScores,
+        month: window.leaderboardData.monthlyScores,
+        total: window.leaderboardData.totalScores
+      }[type];
+
+      const titles = {
+        week: '📅 本周排行',
+        month: '📆 本月排行',
+        total: '🏆 总排行'
+      };
+
+      document.getElementById('leaderboard-content').innerHTML = `
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+          <div class="p-4 bg-gray-50 border-b font-bold">${titles[type]}</div>
+          ${data.length ? data.map((s, i) => {
+            const title = getTitle(type === 'total' ? s.score : getStudentScore(s.id));
+            return `
+              <div class="flex items-center justify-between p-4 border-b hover:bg-gray-50">
+                <div class="flex items-center gap-3">
+                  <span class="w-8 h-8 flex items-center justify-center rounded-full ${i < 3 ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100'} font-bold">
+                    ${i + 1}
+                  </span>
+                  <span class="text-3xl">${s.avatar}</span>
+                  <div>
+                    <div class="font-medium">${s.name}</div>
+                    <div class="text-sm text-gray-500">${s.class}</div>
+                  </div>
+                  ${title ? `<span class="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">${title.icon} ${title.name}</span>` : ''}
+                </div>
+                <span class="${s.score >= 0 ? 'score-positive' : 'score-negative'} text-xl">
+                  ${s.score >= 0 ? '+' : ''}${s.score}
+                </span>
+              </div>
+            `;
+          }).join('') : '<p class="p-8 text-gray-500 text-center">暂无数据</p>'}
+        </div>
+      `;
+    }
+
+    function renderHistory() {
+      const months = [...new Set(appData.records.map(r => getMonthKey(r.date)))].sort().reverse();
+
+      document.getElementById('content').innerHTML = `
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">📚 历史记录</h2>
+
+        <div class="mb-4">
+          <select id="history-month" class="p-3 border rounded-lg" onchange="showMonthHistory()">
+            <option value="">-- 选择月份 --</option>
+            ${months.map(m => `<option value="${m}">${m}</option>`).join('')}
+          </select>
+        </div>
+
+        <div id="history-content">
+          <p class="text-gray-500 text-center py-8">请选择月份查看历史记录</p>
+        </div>
+      `;
+    }
+
+    function showMonthHistory() {
+      const month = document.getElementById('history-month').value;
+      if (!month) return;
+
+      const monthRecords = appData.records.filter(r => getMonthKey(r.date) === month);
+      const studentRecords = {};
+
+      monthRecords.forEach(r => {
+        if (!studentRecords[r.studentId]) {
+          studentRecords[r.studentId] = [];
+        }
+        studentRecords[r.studentId].push(r);
+      });
+
+      const studentsWithRecords = Object.entries(studentRecords)
+        .map(([id, records]) => {
+          const student = appData.students.find(s => s.id === id);
+          const score = records.reduce((sum, r) => sum + r.score, 0);
+          return { student, records, score };
+        })
+        .sort((a, b) => b.score - a.score);
+
+      document.getElementById('history-content').innerHTML = `
+        <div class="bg-white rounded-lg shadow">
+          <div class="p-4 bg-gray-50 border-b font-bold">${month} 学生行为记录</div>
+          ${studentsWithRecords.length ? `
+            <div class="divide-y">
+              ${studentsWithRecords.map(({ student, records, score }) => `
+                <div class="p-4">
+                  <div class="flex items-center justify-between cursor-pointer" onclick="toggleStudentHistory('${student?.id}')">
+                    <div class="flex items-center gap-3">
+                      <span class="text-3xl">${student?.avatar || '👤'}</span>
+                      <div>
+                        <div class="font-medium">${student?.name || '未知学生'}</div>
+                        <div class="text-sm text-gray-500">${student?.class || ''} · ${records.length}条记录</div>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="${score >= 0 ? 'score-positive' : 'score-negative'}">${score >= 0 ? '+' : ''}${score}</span>
+                      <span class="text-gray-400">▼</span>
+                    </div>
+                  </div>
+                  <div id="history-detail-${student?.id}" class="hidden mt-3 pl-12 space-y-2">
+                    ${records.map(r => {
+                      const behavior = getBehaviorById(r.behaviorId);
+                      return `
+                        <div class="flex items-center justify-between py-2 border-l-2 ${r.score >= 0 ? 'border-green-400' : 'border-red-400'} pl-3">
+                          <div class="flex items-center gap-2">
+                            <span>${behavior?.icon || '📋'}</span>
+                            <span class="text-sm">${behavior?.name || '未知'}</span>
+                            <span class="text-xs text-gray-400">${new Date(r.date).toLocaleDateString()}</span>
+                          </div>
+                          <span class="${r.score >= 0 ? 'score-positive' : 'score-negative'} text-sm">
+                            ${r.score >= 0 ? '+' : ''}${r.score}
+                          </span>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          ` : '<p class="p-8 text-gray-500 text-center">该月暂无记录</p>'}
+        </div>
+      `;
+    }
+
+    function toggleStudentHistory(id) {
+      const el = document.getElementById(`history-detail-${id}`);
+      if (el) {
+        el.classList.toggle('hidden');
+      }
+    }
+
+    // ========== 交互函数 ==========
+    function updateBehaviorSelect() {
+      const type = document.getElementById('record-type').value;
+      const behaviorSelect = document.getElementById('record-behavior');
+
+      if (!type) {
+        behaviorSelect.innerHTML = '<option value="">-- 请先选择类型 --</option>';
+        behaviorSelect.disabled = true;
+        return;
+      }
+
+      const behaviors = BEHAVIORS[type];
+      behaviorSelect.innerHTML = `
+        <option value="">-- 请选择行为 --</option>
+        ${behaviors.map(b => `<option value="${b.id}">${b.icon} ${b.name} (${b.score >= 0 ? '+' : ''}${b.score})</option>`).join('')}
+      `;
+      behaviorSelect.disabled = false;
+      updateRecordPreview();
+    }
+
+    function updateRecordPreview() {
+      const behaviorId = document.getElementById('record-behavior').value;
+      const preview = document.getElementById('record-preview');
+      const previewScore = document.getElementById('preview-score');
+
+      if (!behaviorId) {
+        preview.classList.add('hidden');
+        return;
+      }
+
+      const behavior = getBehaviorById(behaviorId);
+      preview.classList.remove('hidden');
+      previewScore.textContent = (behavior.score >= 0 ? '+' : '') + behavior.score;
+      previewScore.className = `text-2xl font-bold ${behavior.score >= 0 ? 'text-green-600' : 'text-red-600'}`;
+    }
+
+    function submitRecord() {
+      const studentId = document.getElementById('record-student').value;
+      const behaviorId = document.getElementById('record-behavior').value;
+
+      if (!studentId || !behaviorId) {
+        alert('请选择学生和行为');
+        return;
+      }
+
+      const behavior = getBehaviorById(behaviorId);
+      const record = {
+        id: generateId(),
+        studentId,
+        behaviorId,
+        score: behavior.score,
+        date: new Date().toISOString()
+      };
+
+      appData.records.push(record);
+      saveData(appData);
+
+      alert(`✅ 记录成功！${behavior.icon} ${behavior.name} (${behavior.score >= 0 ? '+' : ''}${behavior.score})`);
+
+      // 重置表单
+      document.getElementById('record-student').value = '';
+      document.getElementById('record-type').value = '';
+      document.getElementById('record-behavior').innerHTML = '<option value="">-- 请先选择类型 --</option>';
+      document.getElementById('record-behavior').disabled = true;
+      document.getElementById('record-preview').classList.add('hidden');
+
+      render();
+    }
+
+    function showAddStudent() {
+      document.getElementById('modal-container').innerHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal(event)">
+          <div class="bg-white rounded-lg p-6 w-full max-w-md modal" onclick="event.stopPropagation()">
+            <h3 class="text-xl font-bold mb-4">➕ 添加学生</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium mb-1">姓名</label>
+                <input type="text" id="add-name" class="w-full p-2 border rounded-lg" placeholder="请输入姓名">
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">班级</label>
+                <input type="text" id="add-class" class="w-full p-2 border rounded-lg" placeholder="如：一年级一班">
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">性别</label>
+                <select id="add-gender" class="w-full p-2 border rounded-lg">
+                  <option value="男">男</option>
+                  <option value="女">女</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">头像</label>
+                <div class="flex gap-2 flex-wrap">
+                  ${AVATARS.map((a, i) => `
+                    <button type="button" onclick="selectAvatar('${a}')" class="avatar-btn text-3xl p-2 border-2 rounded-lg hover:bg-gray-100 ${i === 0 ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}" data-avatar="${a}">${a}</button>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+            <div class="flex gap-2 mt-6">
+              <button onclick="closeModal()" class="flex-1 py-2 border rounded-lg hover:bg-gray-50">取消</button>
+              <button onclick="addStudent()" class="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">保存</button>
+            </div>
+          </div>
+        </div>
+      `;
+      window.selectedAvatar = AVATARS[0];
+    }
+
+    function selectAvatar(avatar) {
+      window.selectedAvatar = avatar;
+      document.querySelectorAll('.avatar-btn').forEach(btn => {
+        btn.classList.remove('border-blue-500', 'bg-blue-50');
+        btn.classList.add('border-gray-200');
+      });
+      document.querySelector(`.avatar-btn[data-avatar="${avatar}"]`).classList.add('border-blue-500', 'bg-blue-50');
+      document.querySelector(`.avatar-btn[data-avatar="${avatar}"]`).classList.remove('border-gray-200');
+    }
+
+    function addStudent() {
+      const name = document.getElementById('add-name').value.trim();
+      const cls = document.getElementById('add-class').value.trim();
+      const gender = document.getElementById('add-gender').value;
+      const avatar = window.selectedAvatar || AVATARS[0];
+
+      if (!name || !cls) {
+        alert('请填写姓名和班级');
+        return;
+      }
+
+      const student = {
+        id: generateId(),
+        name,
+        class: cls,
+        gender,
+        avatar
+      };
+
+      appData.students.push(student);
+      saveData(appData);
+      closeModal();
+      render();
+    }
+
+    function showImportStudents() {
+      document.getElementById('modal-container').innerHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal(event)">
+          <div class="bg-white rounded-lg p-6 w-full max-w-md modal" onclick="event.stopPropagation()">
+            <h3 class="text-xl font-bold mb-4">📥 表格导入</h3>
+            <p class="text-sm text-gray-500 mb-4">格式：班级,姓名,性别（每行一个学生）</p>
+            <textarea id="import-data" class="w-full h-40 p-3 border rounded-lg font-mono text-sm" placeholder="一年级一班,张三,男
+一年级一班,李四,女"></textarea>
+            <div class="flex gap-2 mt-4">
+              <button onclick="closeModal()" class="flex-1 py-2 border rounded-lg hover:bg-gray-50">取消</button>
+              <button onclick="importStudents()" class="flex-1 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">导入</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function importStudents() {
+      const text = document.getElementById('import-data').value.trim();
+      if (!text) {
+        alert('请输入数据');
+        return;
+      }
+
+      const lines = text.split('\n').filter(l => l.trim());
+      let count = 0;
+
+      lines.forEach(line => {
+        const parts = line.split(',').map(p => p.trim());
+        if (parts.length >= 2) {
+          const student = {
+            id: generateId(),
+            class: parts[0],
+            name: parts[1],
+            gender: parts[2] || '男',
+            avatar: (parts[2] || '男') === '男' ? '👦' : '👧'
+          };
+          appData.students.push(student);
+          count++;
+        }
+      });
+
+      saveData(appData);
+      closeModal();
+      alert(`✅ 成功导入 ${count} 名学生`);
+      render();
+    }
+
+    function deleteStudent(id) {
+      const password = prompt('请输入密码删除学生：');
+      if (password !== '86713279') {
+        alert('密码错误');
+        return;
+      }
+
+      if (!confirm('确定删除该学生？相关记录也会被删除。')) return;
+
+      appData.students = appData.students.filter(s => s.id !== id);
+      appData.records = appData.records.filter(r => r.studentId !== id);
+      saveData(appData);
+      render();
+    }
+
+    function quickRecord(studentId) {
+      currentView = 'records';
+      updateNavigation();
+      render();
+
+      setTimeout(() => {
+        document.getElementById('record-student').value = studentId;
+      }, 100);
+    }
+
+    function closeModal(event) {
+      if (event && event.target !== event.currentTarget) return;
+      document.getElementById('modal-container').innerHTML = '';
+    }
+
+    function updateNavigation() {
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.view === currentView) {
+          item.classList.add('active');
+        }
+      });
+    }
+
+    // ========== 初始化 ==========
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        currentView = item.dataset.view;
+        updateNavigation();
+        render();
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>

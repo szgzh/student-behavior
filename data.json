@@ -1,0 +1,389 @@
+{
+  "students": [
+    {
+      "name": "彭毅",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_uqx21kzlf",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "陈春嵋",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_3yrvlp8k6",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "周康华",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_cfd3uk3e7",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "向雨豪",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_trx4koxpd",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "车俊熙",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_ib77s2hb8",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "李蝴蝶",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_ulyi2j00s",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "吴宇轩",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_dbkqm3rh1",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "胡婷婷",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_vi11x8l9s",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "张丽媛",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_p3xxq7sis",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "张婷婷",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_3twruf8ei",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "李涛",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_5g5wg7dpp",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "杨如月",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_ij9j3wlx6",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "龙书城",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_wdpklrb67",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "杨峰园",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_3ndxckhi9",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "熊芸",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_qjy5znqvh",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "王骏皓",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_obcmu4ek6",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "王欣悦",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_wdelvezlx",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "李宇轩",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_mgnvt9nq8",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "李键华",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_fmwvfza3q",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "代超",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_efdiwiwhf",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "郭宇",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_bey55wr0n",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "赵永恒",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_jjs4ondms",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "代芳",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_oft8jfwrz",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "王垚森",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_jtiaad0cz",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "张雨涵",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_9qmde3sj5",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "张麒举",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_una3b4f9z",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "熊怀花",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_fbcx5phym",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "赵学富",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_zf0e5xhnp",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "赵雨彤",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_hni8x6pis",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "代宇航",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_o8g3ba5gm",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "郝宇轩",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_lor03qlh5",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "王撕雨",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_ehdjrukhi",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "王语欣",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_od7opm7fl",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "熊怀美",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_f6hfyr6us",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "陈梦瑶",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_k2mxyp9ia",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "彭凌薇",
+      "class": "七7班",
+      "gender": "女",
+      "avatar": "👧",
+      "id": "s1778221796769_e0srs93lf",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "王龙",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_trgwg2fzh",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "张朗",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_8x5b54ogn",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "刘海林",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796769_vf25qqpop",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "章鸿易",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796770_40lpkfrzq",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "王建云",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796770_v4xhbhlfh",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "王建亲",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796770_nxy981awz",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "张易才",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796770_snddqdhp1",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "尚宇豪",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796770_znxhvo7tk",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "王超义",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796770_nhxatqmd3",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "李健",
+      "class": "七7班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778221796770_njzdbftup",
+      "createdAt": "2026-05-08"
+    },
+    {
+      "name": "克拉拉",
+      "class": "一班",
+      "gender": "男",
+      "avatar": "👦",
+      "id": "s1778635575982",
+      "createdAt": "2026-05-13"
+    }
+  ],
+  "records": [
+    {
+      "studentId": "s1778635575982",
+      "behaviorId": "b3",
+      "score": 5,
+      "date": "2026-05-13T01:26:32.815Z",
+      "id": "r1778635592815"
+    }
+  ]
+}
